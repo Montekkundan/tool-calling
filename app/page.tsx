@@ -16,14 +16,27 @@ import {
   PromptInputFooter,
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
+import {
+  Confirmation,
+  ConfirmationTitle,
+  ConfirmationRequest,
+  ConfirmationAccepted,
+  ConfirmationRejected,
+  ConfirmationActions,
+  ConfirmationAction,
+} from '@/components/ai-elements/confirmation';
 import { Fragment, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { CopyIcon, RefreshCcwIcon } from 'lucide-react';
+import { CopyIcon, RefreshCcwIcon, CheckIcon, XIcon } from 'lucide-react';
+import { getToolsRequiringConfirmation, APPROVAL } from '@/ai/utils';
+import { tools } from '@/ai/tools';
+import { getToolName, isToolUIPart } from 'ai';
+import { MyTools } from '@/ai/types';
 
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
-  const { messages, sendMessage, status, regenerate } = useChat();
+  const { messages, sendMessage, status, regenerate, addToolOutput } = useChat();
 
   const handleSubmit = (message: PromptInputMessage) => {
 
@@ -42,6 +55,18 @@ const ChatBotDemo = () => {
     );
     setInput('');
   };
+
+   const toolsRequiringConfirmation = getToolsRequiringConfirmation(tools);
+
+    // used to disable input while confirmation is pending
+  const pendingToolCallConfirmation = messages.some(m =>
+    m.parts?.some(
+      part =>
+        isToolUIPart(part) &&
+        part.state === 'input-available' &&
+        toolsRequiringConfirmation.includes(getToolName(part)),
+    ),
+  );
 
   return (
     <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
@@ -83,6 +108,82 @@ const ChatBotDemo = () => {
                         </Fragment>
                       );
                     default:
+                      if (isToolUIPart<MyTools>(part)) {
+                        const toolName = getToolName(part);
+                        const toolCallId = part.toolCallId;
+                        
+                        if (toolsRequiringConfirmation.includes(toolName)) {
+                          let approval;
+                          if (part.state === 'output-available') {
+                            const isDenied = typeof part.output === 'string' && 
+                              part.output.startsWith('Error: User denied');
+                            approval = {
+                              output: isDenied ? APPROVAL.NO : APPROVAL.YES,
+                              approved: !isDenied,
+                            };
+                          }
+
+                          return (
+                            <Confirmation
+                              key={`${message.id}-${i}`}
+                              approval={approval}
+                              state={part.state}
+                            >
+                              <ConfirmationTitle>
+                                Run <code className="font-mono text-sm bg-muted px-1 rounded">{toolName}</code> with:
+                                <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">
+                                  {JSON.stringify(part.input, null, 2)}
+                                </pre>
+                              </ConfirmationTitle>
+
+                              <ConfirmationRequest>
+                                <ConfirmationActions>
+                                  <ConfirmationAction
+                                    variant="default"
+                                    onClick={async () => {
+                                      await addToolOutput({
+                                        toolCallId,
+                                        tool: toolName,
+                                        output: APPROVAL.YES,
+                                      });
+                                      sendMessage();
+                                    }}
+                                  >
+                                    <CheckIcon className="size-4 mr-1" />
+                                    Approve
+                                  </ConfirmationAction>
+                                  <ConfirmationAction
+                                    variant="outline"
+                                    onClick={async () => {
+                                      await addToolOutput({
+                                        toolCallId,
+                                        tool: toolName,
+                                        output: APPROVAL.NO,
+                                      });
+                                      sendMessage();
+                                    }}
+                                  >
+                                    <XIcon className="size-4 mr-1" />
+                                    Deny
+                                  </ConfirmationAction>
+                                </ConfirmationActions>
+                              </ConfirmationRequest>
+
+                              <ConfirmationAccepted>
+                                <div className="text-sm text-muted-foreground">
+                                  ✓ Tool execution approved
+                                </div>
+                              </ConfirmationAccepted>
+
+                              <ConfirmationRejected>
+                                <div className="text-sm text-muted-foreground">
+                                  ✗ Tool execution denied
+                                </div>
+                              </ConfirmationRejected>
+                            </Confirmation>
+                          );
+                        }
+                      }
                       return null;
                   }
                 })}
@@ -98,6 +199,7 @@ const ChatBotDemo = () => {
             <PromptInputTextarea
               onChange={(e) => setInput(e.target.value)}
               value={input}
+              disabled={pendingToolCallConfirmation}
             />
           </PromptInputBody>
           <PromptInputFooter>
