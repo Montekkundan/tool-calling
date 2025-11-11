@@ -25,18 +25,35 @@ import {
   ConfirmationActions,
   ConfirmationAction,
 } from '@/components/ai-elements/confirmation';
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 import { Fragment, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { CopyIcon, RefreshCcwIcon, CheckIcon, XIcon } from 'lucide-react';
 import { getToolsRequiringConfirmation, APPROVAL } from '@/ai/utils';
 import { tools } from '@/ai/tools';
-import { getToolName, isToolUIPart } from 'ai';
-import { MyTools } from '@/ai/types';
+import { getToolName, isToolUIPart, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
+
+// Three scenarios demonstrating different tool execution patterns
+const suggestions = [
+  'What is the weather in San Francisco?',
+  'Search the database for "customer analytics" and analyze the results',
+  'Initiate a secure delete operation on "production_database" resource',
+];
 
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
-  const { messages, sendMessage, status, regenerate, addToolOutput } = useChat();
+  const { messages, sendMessage, status, regenerate, addToolOutput } = useChat({
+    // Automatically continue when tools complete and need follow-up
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+  });
 
   const handleSubmit = (message: PromptInputMessage) => {
 
@@ -67,6 +84,11 @@ const ChatBotDemo = () => {
         toolsRequiringConfirmation.includes(getToolName(part)),
     ),
   );
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ text: suggestion });
+    setInput('');
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
@@ -108,10 +130,11 @@ const ChatBotDemo = () => {
                         </Fragment>
                       );
                     default:
-                      if (isToolUIPart<MyTools>(part)) {
+                      if (isToolUIPart(part)) {
                         const toolName = getToolName(part);
                         const toolCallId = part.toolCallId;
                         
+                        // Show confirmation UI for tools requiring approval
                         if (toolsRequiringConfirmation.includes(toolName)) {
                           let approval;
                           if (part.state === 'output-available') {
@@ -183,6 +206,27 @@ const ChatBotDemo = () => {
                             </Confirmation>
                           );
                         }
+
+                        // Show Tool component for all other tools (auto-executing)
+                        return (
+                          <Tool 
+                            key={`${message.id}-${i}`}
+                            defaultOpen={part.state === 'output-available' || part.state === 'output-error'}
+                          >
+                            <ToolHeader
+                              type={part.type}
+                              state={part.state}
+                              title={toolName}
+                            />
+                            <ToolContent>
+                              <ToolInput input={part.input} />
+                              <ToolOutput
+                                output={part.output}
+                                errorText={part.errorText}
+                              />
+                            </ToolContent>
+                          </Tool>
+                        );
                       }
                       return null;
                   }
@@ -193,23 +237,38 @@ const ChatBotDemo = () => {
           <ConversationScrollButton />
         </Conversation>
 
+        <div className="grid gap-4 mt-4">
+          {/* Show suggestions when there are no messages */}
+          {messages.length === 0 && (
+            <Suggestions>
+              {suggestions.map((suggestion) => (
+                <Suggestion
+                  key={suggestion}
+                  onClick={handleSuggestionClick}
+                  suggestion={suggestion}
+                />
+              ))}
+            </Suggestions>
+          )}
 
-        <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
-          <PromptInputBody>
-            <PromptInputTextarea
-              onChange={(e) => setInput(e.target.value)}
-              value={input}
-              disabled={pendingToolCallConfirmation}
-            />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <PromptInputTools>
-              <PromptInputActionMenu>
-              </PromptInputActionMenu>
-            </PromptInputTools>
-            <PromptInputSubmit disabled={!input && !status} status={status} />
-          </PromptInputFooter>
-        </PromptInput>
+          <PromptInput onSubmit={handleSubmit} globalDrop multiple>
+            <PromptInputBody>
+              <PromptInputTextarea
+                onChange={(e) => setInput(e.target.value)}
+                value={input}
+                disabled={pendingToolCallConfirmation}
+                placeholder="Lets have fun with tool calling..."
+              />
+            </PromptInputBody>
+            <PromptInputFooter>
+              <PromptInputTools>
+                <PromptInputActionMenu>
+                </PromptInputActionMenu>
+              </PromptInputTools>
+              <PromptInputSubmit disabled={!input && !status} status={status} />
+            </PromptInputFooter>
+          </PromptInput>
+        </div>
       </div>
     </div>
   );

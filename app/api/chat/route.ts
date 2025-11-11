@@ -33,9 +33,16 @@ export async function POST(req: Request) {
           // type-safe object for tools without an execute function
           getWeatherInformation: async ({ city }) => {
             const conditions = ['sunny', 'cloudy', 'rainy', 'snowy'];
+            const temp = Math.floor(Math.random() * 30) + 10;
             return `The weather in ${city} is ${
               conditions[Math.floor(Math.random() * conditions.length)]
-            }.`;
+            } with a temperature of ${temp}°C.`;
+          },
+          initiateSecureOperation: async ({ operationType, targetResource }) => {
+            return `Operation "${operationType}" on resource "${targetResource}" has been approved and initiated.`;
+          },
+          validateOperation: async ({ dataToValidate }) => {
+            return `Validation passed for: ${dataToValidate}. All security checks completed successfully.`;
           },
         },
       );
