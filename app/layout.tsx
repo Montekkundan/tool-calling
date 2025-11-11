@@ -18,13 +18,6 @@ export const metadata: Metadata = {
   description: "Tool calling with aisdk",
 };
 
-const protectedRoutes = [
-  {
-    path: '/api/chat',
-    method: 'POST',
-  },
-];
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,9 +25,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <BotIdClient protect={protectedRoutes} />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
