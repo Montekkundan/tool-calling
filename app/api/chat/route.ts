@@ -9,12 +9,20 @@ import {
   stepCountIs,
   gateway,
 } from 'ai';
+import { checkBotId } from 'botid/server';
+import { NextResponse } from 'next/server';
 
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const verification = await checkBotId();
+ 
+  if (verification.isBot) {
+    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+  }
+  
   const { messages }: { messages: HumanInTheLoopUIMessage[] } =
     await req.json();
 
