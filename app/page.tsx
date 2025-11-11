@@ -65,7 +65,7 @@ const ChatBotDemo = () => {
     }
 
     sendMessage(
-      { 
+      {
         // @ts-expect-error ditto
         text: message.text,
       }
@@ -73,9 +73,9 @@ const ChatBotDemo = () => {
     setInput('');
   };
 
-   const toolsRequiringConfirmation = getToolsRequiringConfirmation(tools);
+  const toolsRequiringConfirmation = getToolsRequiringConfirmation(tools);
 
-    // used to disable input while confirmation is pending
+  // used to disable input while confirmation is pending
   const pendingToolCallConfirmation = messages.some(m =>
     m.parts?.some(
       part =>
@@ -93,7 +93,7 @@ const ChatBotDemo = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
       <div className="flex flex-col h-full">
-  <Conversation>
+        <Conversation>
           <ConversationContent>
             {messages.map((message, messageIndex) => (
               <Fragment key={message.id}>
@@ -133,12 +133,12 @@ const ChatBotDemo = () => {
                       if (isToolUIPart(part)) {
                         const toolName = getToolName(part);
                         const toolCallId = part.toolCallId;
-                        
+
                         // Show confirmation UI for tools requiring approval
                         if (toolsRequiringConfirmation.includes(toolName)) {
                           let approval;
                           if (part.state === 'output-available') {
-                            const isDenied = typeof part.output === 'string' && 
+                            const isDenied = typeof part.output === 'string' &&
                               part.output.startsWith('Error: User denied');
                             approval = {
                               output: isDenied ? APPROVAL.NO : APPROVAL.YES,
@@ -209,7 +209,7 @@ const ChatBotDemo = () => {
 
                         // Show Tool component for all other tools (auto-executing)
                         return (
-                          <Tool 
+                          <Tool
                             key={`${message.id}-${i}`}
                             defaultOpen={part.state === 'output-available' || part.state === 'output-error'}
                           >
@@ -267,7 +267,20 @@ const ChatBotDemo = () => {
               </PromptInputTools>
               <PromptInputSubmit disabled={!input && !status} status={status} />
             </PromptInputFooter>
+
           </PromptInput>
+          <p className="text-xs mx-auto font-light">
+            Thank you{" "}
+            <a
+              href="https://vercel.com"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="text-black hover:text-green-700 transition-colors"
+            >
+              Vercel ▲
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>
