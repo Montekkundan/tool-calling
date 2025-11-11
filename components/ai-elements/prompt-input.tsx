@@ -706,7 +706,10 @@ export const PromptInput = ({
       })
     ).then((convertedFiles: FileUIPart[]) => {
       try {
-        const result = onSubmit({ text, files: convertedFiles }, event);
+        const result = onSubmit(
+          ({ text, files: convertedFiles } as unknown) as PromptInputMessage,
+          event
+        );
 
         // Handle both sync and async onSubmit
         if (result instanceof Promise) {
