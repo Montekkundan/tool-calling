@@ -1,36 +1,19 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Human-in-the-loop Tool Calling Demo
 
-## Getting Started
+This template shows three tool-calling scenarios with optional human approval (see the [AI SDK cookbook: human-in-the-loop](https://ai-sdk.dev/cookbook/next/human-in-the-loop#human-in-the-loop-with-nextjs)).
 
-First, run the development server:
+Scenarios:
+- Weather lookup (auto-exec)
+- Search + analysis chain (auto-exec; illustrates multiple tool calls)
+- Secure operation (requires explicit approval or denial)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Key files:
+- `app/api/chat/route.ts`: Streams assistant responses. Runs `processToolCalls` to gate tools needing approval. Uses `streamText` with step limit and merges tool output into a UI stream.
+- `app/page.tsx`: Chat UI using `useChat`. Detects pending tool calls needing confirmation and renders approval buttons (Approve / Deny). Automatically continues when tool calls finish.
+- `components/ai-elements/tool.tsx`: Collapsible UI for each tool invocation showing parameters, status badges, and JSON or string output.
+- Confirmation logic: Tools flagged as requiring approval display a confirmation component instead of auto-executing.
+- Status handling: Tool states (`input-streaming`, `input-available`, `output-available`, `output-error`) mapped to badges.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Try starting with one of the suggestions shown when the chat is empty.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If you have any questions as me [montekkundan](https://x.com/montekkundan), ill be happy to help!
